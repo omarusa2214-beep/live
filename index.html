@@ -3,9 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم توليد روابط HTML</title>
+    <title>لوحة تحكم الأدوات الشاملة</title>
+    
+    <!-- مكتبة JSZip الخاصة بأداة PWA -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- أكواد الـ Service Worker الخاصة بأداة PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#00ffff">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
+
     <style>
-        :root {
+        /* ========================================================
+           التنسيقات الأساسية وتنسيق نظام التبويبات (Tabs)
+           ======================================================== */
+        body {
+            background-color: #1e1e2f;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #27293d;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-top: 4px solid #00f2c3;
+        }
+
+        .nav-tabs button {
+            background: #1d1e2b;
+            color: #9a9a9a;
+            border: 2px solid #3b3d5c;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs button:hover {
+            color: #ffffff;
+            border-color: #e14eca;
+        }
+
+        .nav-tabs button.active {
+            background: linear-gradient(45deg, #e14eca, #ba22a3);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 5px 15px rgba(225, 78, 202, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========================================================
+           تنسيقات الأداة الأولى (تحويل الكود إلى رابط)
+           ======================================================== */
+        #html-link {
             --bg-color: #1e1e2f;
             --card-bg: #27293d;
             --primary: #e14eca;
@@ -18,452 +111,784 @@
             --success: #2ecc71;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .dashboard-container {
+        #html-link .dashboard-container {
             background-color: var(--card-bg);
             width: 100%;
-            max-width: 900px;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border-top: 4px solid var(--secondary);
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            color: var(--text-main);
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .input-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        label {
-            font-weight: bold;
-            color: var(--secondary);
-            font-size: 15px;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn-small {
-            background-color: #3b3d5c;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            transition: background 0.3s, transform 0.1s;
-        }
-
-        .btn-small:hover { transform: translateY(-1px); }
-        .btn-small:active { transform: translateY(1px); }
-
-        .btn-small.paste { background-color: #3b3d5c; }
-        .btn-small.paste:hover { background-color: #4a4d73; }
+        #html-link .header { text-align: center; margin-bottom: 25px; }
+        #html-link .header h1 { font-size: 24px; color: var(--text-main); margin-bottom: 10px; }
+        #html-link .header p { color: var(--text-muted); font-size: 14px; }
+        #html-link .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        #html-link .input-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        #html-link label { font-weight: bold; color: var(--secondary); font-size: 15px; }
+        #html-link .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
         
-        .btn-small.danger { background-color: var(--danger); }
-        .btn-small.danger:hover { background-color: #e60000; }
+        #html-link .btn-small { background-color: #3b3d5c; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; transition: background 0.3s, transform 0.1s; }
+        #html-link .btn-small:hover { transform: translateY(-1px); }
+        #html-link .btn-small:active { transform: translateY(1px); }
+        #html-link .btn-small.paste { background-color: #3b3d5c; }
+        #html-link .btn-small.paste:hover { background-color: #4a4d73; }
+        #html-link .btn-small.danger { background-color: var(--danger); }
+        #html-link .btn-small.danger:hover { background-color: #e60000; }
+        #html-link .btn-small.info { background-color: var(--info); }
+        #html-link .btn-small.info:hover { background-color: #0097e6; }
+        #html-link .btn-small.warning { background-color: var(--warning); color: #000; }
+        #html-link .btn-small.warning:hover { background-color: #e1b12c; }
 
-        .btn-small.info { background-color: var(--info); }
-        .btn-small.info:hover { background-color: #0097e6; }
+        #html-link textarea { width: 100%; height: 200px; background-color: #1d1e2b; border: 1px solid #3b3d5c; color: var(--text-main); padding: 15px; border-radius: 8px; font-size: 14px; resize: vertical; direction: ltr; outline: none; transition: all 0.3s ease; }
+        #html-link textarea:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(225, 78, 202, 0.2); }
+        
+        #html-link .btn-generate { background: linear-gradient(45deg, var(--primary), #ba22a3); color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; width: 100%; }
+        #html-link .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(225, 78, 202, 0.4); }
 
-        .btn-small.warning { background-color: var(--warning); color: #000; }
-        .btn-small.warning:hover { background-color: #e1b12c; }
+        #html-link .result-area { display: none; margin-top: 30px; animation: fadeIn 0.5s ease; }
+        #html-link .link-box { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        #html-link .link-input { flex: 1; min-width: 200px; background-color: #1d1e2b; border: 1px solid #3b3d5c; color: var(--secondary); padding: 12px; border-radius: 8px; font-size: 13px; direction: ltr; outline: none; }
+        #html-link .short-link-input { color: var(--primary); font-weight: bold; }
+        
+        #html-link .btn-action { background-color: #3b3d5c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s; white-space: nowrap; }
+        #html-link .btn-action.copy { background-color: var(--secondary); color: #000; }
+        #html-link .btn-action.shorten { background-color: var(--info); color: #fff; }
+        #html-link .btn-action.download { background-color: var(--success); color: #fff; }
+        #html-link .btn-action:hover { opacity: 0.8; }
 
-        textarea {
-            width: 100%;
-            height: 200px;
-            background-color: #1d1e2b;
-            border: 1px solid #3b3d5c;
+        #html-link .preview-section { margin-top: 20px; border: 1px solid #3b3d5c; border-radius: 8px; overflow: hidden; background-color: #fff; }
+        #html-link .preview-header { background-color: #3b3d5c; padding: 10px; font-size: 14px; text-align: center; color: white; }
+        #html-link iframe { width: 100%; height: 300px; border: none; display: block; }
+
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #00f2c3; color: #000; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* ========================================================
+           تنسيقات الأداة الثانية (صانع PWA) معزولة بالكامل
+           ======================================================== */
+        #pwa-maker {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            font-family: system-ui, -apple-system, sans-serif;
             color: var(--text-main);
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            resize: vertical;
-            direction: ltr;
-            outline: none;
-            transition: all 0.3s ease;
+            line-height: 1.6;
         }
-
-        textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(225, 78, 202, 0.2);
-        }
-
-        .btn-generate {
-            background: linear-gradient(45deg, var(--primary), #ba22a3);
-            color: white;
-            border: none;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-        }
-
-        .btn-generate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(225, 78, 202, 0.4);
-        }
-
-        .result-area {
-            display: none;
-            margin-top: 30px;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .link-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .link-input {
-            flex: 1;
-            min-width: 200px;
-            background-color: #1d1e2b;
-            border: 1px solid #3b3d5c;
-            color: var(--secondary);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            direction: ltr;
-            outline: none;
-        }
-
-        .short-link-input {
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        .btn-action {
-            background-color: #3b3d5c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-            white-space: nowrap;
-        }
-
-        .btn-action.copy { background-color: var(--secondary); color: #000; }
-        .btn-action.shorten { background-color: var(--info); color: #fff; }
-        .btn-action.download { background-color: var(--success); color: #fff; }
-        .btn-action:hover { opacity: 0.8; }
-
-        .preview-section {
-            margin-top: 20px;
-            border: 1px solid #3b3d5c;
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: #fff;
-        }
-
-        .preview-header {
-            background-color: #3b3d5c;
-            padding: 10px;
-            font-size: 14px;
-            text-align: center;
-            color: white;
-        }
-
-        iframe {
-            width: 100%;
-            height: 300px;
-            border: none;
-            display: block;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--secondary);
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            display: none;
-            z-index: 1000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
+        #pwa-maker .container { max-width: 800px; margin: 0 auto; }
+        #pwa-maker .card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        #pwa-maker h1, #pwa-maker h2 { text-align: center; color: var(--text-main); margin-top: 0; }
+        #pwa-maker .form-group { margin-bottom: 15px; }
+        #pwa-maker label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; font-weight: normal; }
+        #pwa-maker input[type="text"], #pwa-maker input[type="color"], #pwa-maker textarea, #pwa-maker select { width: 100%; padding: 10px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: white; box-sizing: border-box; font-family: inherit; }
+        #pwa-maker textarea { resize: vertical; font-family: monospace; direction: ltr; outline: none; }
+        #pwa-maker .file-upload-wrapper { position: relative; margin-bottom: 10px; }
+        #pwa-maker .file-upload-btn { display: inline-block; background-color: #334155; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: background 0.3s; border: 1px dashed var(--text-muted); }
+        #pwa-maker .file-upload-btn:hover { background-color: #475569; }
+        #pwa-maker input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        #pwa-maker .btn-main { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        #pwa-maker .btn-main:hover { background-color: var(--primary-hover); }
+        #pwa-maker .btn-zip { width: 100%; padding: 15px; background-color: var(--warning); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        #pwa-maker .btn-zip:hover { background-color: var(--warning-hover); }
+        #pwa-maker .file-section { margin-top: 20px; border-bottom: 1px solid #334155; padding-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        #pwa-maker .file-section:last-child { border: none; }
+        #pwa-maker .section-title { font-weight: bold; color: var(--text-main); font-size: 0.9rem;}
+        #pwa-maker .btn-download button { background-color: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; font-family: inherit; transition: background 0.3s; }
+        #pwa-maker .btn-download button:hover { background-color: var(--success-hover); }
+        #pwa-maker .preview-box { display: flex; gap: 15px; margin-top: 15px; justify-content: center; }
+        #pwa-maker .preview-box img { border-radius: 16px; border: 2px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     </style>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="manifest" href="./manifest.json?v=v1783689016648">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="./icon-192.png?v=v1783689016648">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=v1783689016648')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <div class="header">
-            <h1>أداة تحويل كود HTML إلى رابط مباشر</h1>
-            <p>ضع الكود، ارفع ملفاً، أو أدرج صورة وسيتم توليد رابط عادي سريع ومعاينتها فوراً</p>
-        </div>
+<div class="main-wrapper">
+    
+    <!-- أزرار التبويبات للتنقل بين الأداتين -->
+    <div class="nav-tabs">
+        <button class="active" onclick="switchTab('html-link', this)">أداة تحويل الكود لرابط</button>
+        <button onclick="switchTab('pwa-maker', this)">صانع التطبيقات (PWA) الشامل</button>
+    </div>
 
-        <div class="input-group">
-            <div class="input-header">
-                <label for="htmlCode">كود HTML:</label>
-                
-                <div class="action-buttons">
-                    <input type="file" id="fileUploader" style="display: none;" accept=".html,.htm,.txt" onchange="handleFileUpload(event)">
-                    <input type="file" id="imgUploader" style="display: none;" accept="image/*" onchange="handleImageUpload(event)">
+    <!-- ==========================================
+         التبويب الأول: أداة تحويل الكود إلى رابط 
+         ========================================== -->
+    <div id="html-link" class="tab-content active">
+        <div class="dashboard-container">
+            <div class="header">
+                <h1>أداة تحويل كود HTML إلى رابط مباشر</h1>
+                <p>ضع الكود، ارفع ملفاً، أو أدرج صورة وسيتم توليد رابط عادي سريع ومعاينتها فوراً</p>
+            </div>
+
+            <div class="input-group">
+                <div class="input-header">
+                    <label for="htmlCode">كود HTML:</label>
                     
-                    <button class="btn-small info" onclick="document.getElementById('fileUploader').click()">📂 رفع ملف HTML</button>
-                    <button class="btn-small warning" onclick="document.getElementById('imgUploader').click()">🖼️ إدراج صورة</button>
-                    <button class="btn-small paste" onclick="pasteCode()">📋 لصق</button>
-                    <button class="btn-small danger" onclick="clearCode()">🗑️ مسح الكل</button>
+                    <div class="action-buttons">
+                        <input type="file" id="fileUploader" style="display: none;" accept=".html,.htm,.txt" onchange="handleFileUpload(event)">
+                        <input type="file" id="imgUploader" style="display: none;" accept="image/*" onchange="handleImageUpload(event)">
+                        
+                        <button class="btn-small info" onclick="document.getElementById('fileUploader').click()">📂 رفع ملف HTML</button>
+                        <button class="btn-small warning" onclick="document.getElementById('imgUploader').click()">🖼️ إدراج صورة</button>
+                        <button class="btn-small paste" onclick="pasteCode()">📋 لصق</button>
+                        <button class="btn-small danger" onclick="clearCode()">🗑️ مسح الكل</button>
+                    </div>
                 </div>
-            </div>
-            <textarea id="htmlCode" placeholder="<!DOCTYPE html>&#10;<html>&#10;...&#10;</html>"></textarea>
-        </div>
-
-        <button class="btn-generate" onclick="generatePageLink()">تحويل وتوليد الرابط الآن</button>
-
-        <div class="result-area" id="resultArea">
-            <label>الرابط الخاص بالصفحة (يفتح بشكل سليم وسريع):</label>
-            <div class="link-box">
-                <input type="text" id="generatedLink" class="link-input" readonly>
-                <button class="btn-action copy" onclick="copyLink('generatedLink')">نسخ الرابط</button>
-                <button class="btn-action" onclick="openInNewTab()">فتح في نافذة</button>
-                <button class="btn-action download" onclick="downloadHTMLFile()">💾 تحميل الملف</button>
+                <textarea id="htmlCode" placeholder="<!DOCTYPE html>&#10;<html>&#10;...&#10;</html>"></textarea>
             </div>
 
-            <label style="color: var(--info);">رابط مختصر (اختياري للأكواد الصغيرة فقط):</label>
-            <div class="link-box">
-                <input type="text" id="shortLink" class="link-input short-link-input" placeholder="اضغط على تقصير الرابط ليظهر هنا..." readonly>
-                <button class="btn-action shorten" id="btnShorten" onclick="createShortLink()">✂️ تقصير الرابط</button>
-                <button class="btn-action copy" onclick="copyLink('shortLink')">نسخ المختصر</button>
-            </div>
+            <button class="btn-generate" onclick="generatePageLink()">تحويل وتوليد الرابط الآن</button>
 
-            <div class="preview-section">
-                <div class="preview-header">معاينة حية للصفحة المنسوخة</div>
-                <iframe id="previewFrame"></iframe>
+            <div class="result-area" id="resultArea">
+                <label>الرابط الخاص بالصفحة (يفتح بشكل سليم وسريع):</label>
+                <div class="link-box">
+                    <input type="text" id="generatedLink" class="link-input" readonly>
+                    <button class="btn-action copy" onclick="copyLink('generatedLink')">نسخ الرابط</button>
+                    <button class="btn-action" onclick="openInNewTab()">فتح في نافذة</button>
+                    <button class="btn-action download" onclick="downloadHTMLFile()">💾 تحميل الملف</button>
+                </div>
+
+                <label style="color: var(--info);">رابط مختصر (اختياري للأكواد الصغيرة فقط):</label>
+                <div class="link-box">
+                    <input type="text" id="shortLink" class="link-input short-link-input" placeholder="اضغط على تقصير الرابط ليظهر هنا..." readonly>
+                    <button class="btn-action shorten" id="btnShorten" onclick="createShortLink()">✂️ تقصير الرابط</button>
+                    <button class="btn-action copy" onclick="copyLink('shortLink')">نسخ المختصر</button>
+                </div>
+
+                <div class="preview-section">
+                    <div class="preview-header">معاينة حية للصفحة المنسوخة</div>
+                    <iframe id="previewFrame"></iframe>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="toast" id="toastMsg">تم الإجراء بنجاح!</div>
 
+    <!-- ==========================================
+         التبويب الثاني: أداة صانع PWA الشامل
+         ========================================== -->
+    <div id="pwa-maker" class="tab-content">
+        <div class="container">
+            <div class="card">
+                <h1>صانع PWA الشامل 🚀</h1>
+                <p style="text-align: center; color: var(--text-muted); margin-bottom: 25px;">ارفع ملفك أو اكتب الكود، وهنجهزلك فولدر كامل جاهز للرفع</p>
+                
+                <div class="form-group">
+                    <label>اسم التطبيق الكامل</label>
+                    <input type="text" id="appName" placeholder="مثال: My Awesome App" value="My PWA App">
+                </div>
+                
+                <div class="form-group">
+                    <label>الاسم القصير (بيظهر تحت الأيقونة)</label>
+                    <input type="text" id="shortName" placeholder="مثال: PWA App" value="PWA App">
+                </div>
+
+                <div class="form-group">
+                    <label>وصف التطبيق (يظهر عند التثبيت)</label>
+                    <textarea id="appDescription" rows="2" dir="rtl" style="font-family: inherit;" placeholder="تطبيق رائع لتسهيل المهام اليومية..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>اتجاه الشاشة</label>
+                    <select id="appOrientation">
+                        <option value="any">تلقائي (Any)</option>
+                        <option value="portrait">بالطول (Portrait)</option>
+                        <option value="landscape">بالعرض (Landscape)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>رقم إصدار الكاش (يتغير تلقائياً إلى أرقام عشوائية كبيرة لتخطي الكاش)</label>
+                    <input type="text" id="cacheVersion" value="98451236571932" readonly style="background: #1e293b; color: var(--text-muted); cursor: not-allowed;">
+                </div>
+                
+                <div class="form-group">
+                    <label>رفع أيقونة خاصة (اختياري)</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn" id="iconUploadLabel">🖼️ اختر صورة للأيقونة</div>
+                        <input type="file" id="iconFileInput" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>لون الواجهة والأيقونة (Theme Color)</label>
+                    <input type="color" id="themeColor" value="#3b82f6" style="height: 40px; padding: 2px;">
+                </div>
+                
+                <div class="form-group">
+                    <label>كود صفحتك الأصلية (index.html)</label>
+                    <button type="button" onclick="pasteFromClipboard()" style="margin-bottom: 5px; cursor: pointer; background: #334155; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem;">📋 لصق من الحافظة</button>
+                    <button type="button" onclick="clearInputHtml()" style="margin-bottom: 5px; cursor: pointer; background: #ef4444; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; margin-right: 5px;">🗑️ مسح الكود</button>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn" id="htmlUploadLabel">📂 ارفع ملف index.html من جهازك</div>
+                        <input type="file" id="htmlFileInput" accept=".html, .htm">
+                    </div>
+                    <textarea id="inputHtml" rows="8" placeholder="<!DOCTYPE html>&#10;<html>&#10;<head>&#10;  <title>موقعي</title>&#10;</head>&#10;<body>&#10;  <h1>أهلاً بك</h1>&#10;</body>&#10;</html>"></textarea>
+                </div>
+
+                <button class="btn-main" onclick="generateAllFiles()">توليد وتجهيز الملفات</button>
+            </div>
+
+            <div class="card" id="resultsCard" style="display: none;">
+                <h2>الملفات الجاهزة 📁</h2>
+                
+                <button class="btn-zip" onclick="downloadAsZip()">تحميل الـ 6 ملفات في فولدر ZIP 📦</button>
+                
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">أو تقدر تحمل كل ملف لوحده من تحت لو حابب:</p>
+
+                <div class="preview-box" style="margin-bottom: 20px;">
+                    <div style="text-align: center;">
+                        <img id="icon192Preview" src="" alt="Icon 192" style="width: 96px; height: 96px;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">مقاس 192x192</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <img id="icon512Preview" src="" alt="Icon 512" style="width: 120px; height: 120px;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">مقاس 512x512</div>
+                    </div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">1. أيقونة كروم (icon-192.png)</div>
+                    <div class="btn-download"><button onclick="downloadBlob('icon-192.png', icon192Data.blob)">تحميل منفصل 📥</button></div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">2. أيقونة التطبيق (icon-512.png)</div>
+                    <div class="btn-download"><button onclick="downloadBlob('icon-512.png', icon512Data.blob)">تحميل منفصل 📥</button></div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">3. صفحة الموقع (index.html)</div>
+                    <div class="btn-download"><button onclick="downloadText('index.html')">تحميل منفصل 📥</button></div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">4. إعدادات التثبيت (manifest.json)</div>
+                    <div class="btn-download"><button onclick="downloadText('manifest.json')">تحميل منفصل 📥</button></div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">5. ملف الأوفلاين (sw.js)</div>
+                    <div class="btn-download"><button onclick="downloadText('sw.js')">تحميل منفصل 📥</button></div>
+                </div>
+
+                <div class="file-section">
+                    <div class="section-title">6. صفحة انقطاع النت (offline.html)</div>
+                    <div class="btn-download"><button onclick="downloadText('offline.html')">تحميل منفصل 📥</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- إشعار النسخ -->
+<div class="toast" id="toastMsg">تم الإجراء بنجاح!</div>
+
+<!-- سكربت التحكم العام للأداتين -->
+<script>
+    // ==========================================
+    // كود التحكم في نظام التبويبات (Tabs)
+    // ==========================================
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toastMsg');
+        toast.innerText = message || 'تم الإجراء بنجاح!';
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // ==========================================
+    // جافاسكربت الأداة الأولى (محول الكود إلى رابط)
+    // ==========================================
+    let currentBlobUrl = null;
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('htmlCode').value = e.target.result;
+            showToast('تم تحميل كود الملف بنجاح!');
+        };
+        reader.readAsText(file);
+        event.target.value = ''; 
+    }
+
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Image = e.target.result;
+            const imgTag = `\n<img src="${base64Image}" alt="صورة مرفوعة" style="max-width: 100%; border-radius: 8px;">\n`;
+            const textarea = document.getElementById('htmlCode');
+            const cursorPosition = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPosition);
+            const textAfter = textarea.value.substring(cursorPosition);
+            textarea.value = textBefore + imgTag + textAfter;
+            showToast('تم إدراج كود الصورة بنجاح!');
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    async function pasteCode() {
+        try {
+            const text = await navigator.clipboard.readText();
+            document.getElementById('htmlCode').value = text;
+            showToast('تم اللصق بنجاح!');
+        } catch (err) {
+            alert('عذراً، متصفحك يمنع اللصق التلقائي. يرجى الضغط بيمين الماوس واختيار لصق، أو استخدام Ctrl+V');
+        }
+    }
+
+    function clearCode() {
+        document.getElementById('htmlCode').value = '';
+        document.getElementById('resultArea').style.display = 'none';
+        document.getElementById('generatedLink').value = '';
+        document.getElementById('shortLink').value = '';
+        document.getElementById('previewFrame').src = '';
+        if (currentBlobUrl) {
+            URL.revokeObjectURL(currentBlobUrl);
+            currentBlobUrl = null;
+        }
+        showToast('تم مسح كل شيء!');
+    }
+
+    function generatePageLink() {
+        const htmlContent = document.getElementById('htmlCode').value;
+        if (htmlContent.trim() === '') {
+            alert('عذراً، يجب عليك لصق كود أو رفع ملف أولاً!');
+            return;
+        }
+        if (currentBlobUrl) {
+            URL.revokeObjectURL(currentBlobUrl); 
+        }
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        currentBlobUrl = URL.createObjectURL(blob);
+        
+        document.getElementById('generatedLink').value = currentBlobUrl;
+        document.getElementById('shortLink').value = '';
+        document.getElementById('previewFrame').src = currentBlobUrl;
+        document.getElementById('resultArea').style.display = 'block';
+        showToast('تم توليد الرابط بنجاح!');
+    }
+
+    async function createShortLink() {
+        const htmlContent = document.getElementById('htmlCode').value;
+        if (!htmlContent) {
+            alert('قم بتوليد الرابط الأساسي أولاً!');
+            return;
+        }
+        if (htmlContent.length > 2000) {
+            alert('عذراً، الكود الخاص بك ضخم جداً. يرجى استخدام ميزة "تحميل الملف" لرفعه على استضافتك.');
+            return;
+        }
+        const btn = document.getElementById('btnShorten');
+        btn.innerText = 'جاري التقصير...';
+        btn.disabled = true;
+
+        try {
+            const encodedHtml = encodeURIComponent(htmlContent);
+            const dataUri = `data:text/html;charset=utf-8,${encodedHtml}`;
+            const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(dataUri)}`);
+            if (response.ok) {
+                const shortUrl = await response.text();
+                document.getElementById('shortLink').value = shortUrl;
+                showToast('تم تقصير الرابط بنجاح!');
+            } else {
+                throw new Error('فشل التقصير');
+            }
+        } catch (error) {
+            alert('فشل اختصار الرابط، الكود كبير جداً. يرجى استخدام ميزة "تحميل الملف".');
+        } finally {
+            btn.innerText = '✂️ تقصير الرابط';
+            btn.disabled = false;
+        }
+    }
+
+    function downloadHTMLFile() {
+        const htmlContent = document.getElementById('htmlCode').value;
+        if (htmlContent.trim() === '') {
+            alert('لا يوجد كود لتحميله!');
+            return;
+        }
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'my_page.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('تم تحميل الملف بنجاح!');
+    }
+
+    function copyLink(elementId) {
+        const linkInput = document.getElementById(elementId);
+        if (linkInput.value.trim() === '') {
+            alert('لا يوجد رابط لنسخه!');
+            return;
+        }
+        linkInput.select();
+        linkInput.setSelectionRange(0, 999999); 
+        navigator.clipboard.writeText(linkInput.value).then(() => {
+            showToast('تم النسخ بنجاح!');
+        }).catch(err => {
+            document.execCommand('copy');
+            showToast('تم النسخ بنجاح!');
+        });
+    }
+
+    function openInNewTab() {
+        if (currentBlobUrl) {
+            window.open(currentBlobUrl, '_blank');
+        }
+    }
+
+
+    // ==========================================
+    // جافاسكربت الأداة الثانية (صانع PWA)
+    // ==========================================
+    async function pasteFromClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text) {
+                alert('الحافظة فارغة!');
+                return;
+            }
+            document.getElementById('inputHtml').value = text;
+            showToast('تم اللصق بنجاح!');
+        } catch (err) { 
+            alert('تعذر الوصول للحافظة، تأكد من إعطاء الصلاحية أو استخدم اختصار اللصق اليدوي (Ctrl+V).'); 
+        }
+    }
+
+    function clearInputHtml() {
+        document.getElementById('inputHtml').value = '';
+        showToast('تم مسح الكود!');
+    }
+
+    document.getElementById('htmlFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('inputHtml').value = e.target.result;
+            const btn = document.getElementById('htmlUploadLabel');
+            btn.innerHTML = '✅ تم رفع: ' + file.name;
+            showToast('تم رفع كود الملف بنجاح!');
+        };
+        reader.readAsText(file);
+    });
+
+    let uploadedImage = null;
+    document.getElementById('iconFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImage = e.target.result;
+            document.getElementById('iconUploadLabel').innerHTML = '✅ تم اختيار: ' + file.name;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    let textFiles = { 'index.html': '', 'manifest.json': '', 'sw.js': '', 'offline.html': '' };
+    let icon192Data = null;
+    let icon512Data = null;
+    let currentAppName = 'PWA_App';
+
+    function createIcon(size, color, text, imageSrc) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            function drawDefault() {
+                const gradient = ctx.createLinearGradient(0, 0, 0, size);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, '#0f172a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold ' + (size * 0.45) + 'px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, size / 2, size / 2);
+                finish();
+            }
+
+            function finish() {
+                canvas.toBlob((blob) => {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const base64 = dataUrl.split(',')[1];
+                    resolve({ blob, dataUrl, base64 });
+                }, 'image/png');
+            }
+
+            if (imageSrc) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, size, size);
+                    finish();
+                };
+                img.onerror = () => {
+                    alert('حدث خطأ أثناء قراءة الصورة المرفوعة، سيتم استخدام الأيقونة الافتراضية.');
+                    drawDefault();
+                };
+                img.src = imageSrc;
+            } else {
+                drawDefault();
+            }
+        });
+    }
+
+    async function generateAllFiles() {
+        const appName = document.getElementById('appName').value;
+        const shortName = document.getElementById('shortName').value;
+        const appDescription = document.getElementById('appDescription').value;
+        const appOrientation = document.getElementById('appOrientation').value;
+        
+        const randomBigPart = Math.floor(100000000 + Math.random() * 900000000);
+        const cacheVersion = randomBigPart + '' + Date.now();
+        document.getElementById('cacheVersion').value = cacheVersion; 
+
+        const themeColor = document.getElementById('themeColor').value;
+        const inputHtml = document.getElementById('inputHtml').value;
+        
+        currentAppName = appName.trim() ? appName : 'PWA_App';
+        const initialLetter = shortName.trim() ? shortName.trim().charAt(0).toUpperCase() : 'A';
+
+        icon192Data = await createIcon(192, themeColor, initialLetter, uploadedImage);
+        icon512Data = await createIcon(512, themeColor, initialLetter, uploadedImage);
+        
+        document.getElementById('icon192Preview').src = icon192Data.dataUrl;
+        document.getElementById('icon512Preview').src = icon512Data.dataUrl;
+
+        const manifestObj = {
+            "name": appName,
+            "short_name": shortName,
+            "description": appDescription,
+            "start_url": "./index.html",
+            "display": "standalone",
+            "orientation": appOrientation,
+            "background_color": "#ffffff",
+            "theme_color": themeColor,
+            "icons": [
+                { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+                { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+            ]
+        };
+        textFiles['manifest.json'] = JSON.stringify(manifestObj, null, 2);
+
+        textFiles['offline.html'] = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لا يوجد اتصال بالإنترنت</title>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, sans-serif; text-align: center; background-color: ${themeColor}; color: white; }
+        .icon { font-size: 4rem; margin-bottom: 20px; }
+        button { margin-top: 30px; padding: 12px 24px; font-size: 1rem; cursor: pointer; border: none; border-radius: 8px; background-color: white; color: ${themeColor}; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="icon">📶</div>
+    <h1>أنت الآن غير متصل بالإنترنت</h1>
+    <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+    <button onclick="window.location.reload()">تحديث الصفحة</button>
+</body>
+</html>`;
+
+        textFiles['sw.js'] = `const CACHE_NAME = 'pwa-cache-${cacheVersion}';
+const urlsToCache = [ './', './index.html', './offline.html', './icon-192.png', './icon-512.png', './manifest.json' ];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match(event.request) || caches.match('./index.html') || caches.match('./offline.html');
+        })
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => {
+          return response || fetch(event.request);
+        })
+    );
+  }
+});`;
+
+        const pwaTags = `
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="${themeColor}">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <script>
-        let currentBlobUrl = null;
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js?v=${cacheVersion}')
+            .then(reg => {
+              console.log('SW Registered');
+              reg.update();
+            })
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </` + `script>\n`;
 
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('htmlCode').value = e.target.result;
-                showToast('تم تحميل كود الملف بنجاح!');
-            };
-            reader.readAsText(file);
-            event.target.value = ''; 
+        let finalHtml = '';
+        const sourceHtml = inputHtml.trim() ? inputHtml : `<!DOCTYPE html>\n<html>\n<head>\n  <title>${appName}</title>\n</head>\n<body>\n  <h1 style="text-align:center; margin-top:50px;">مرحباً بك في ${appName}</h1>\n</body>\n</html>`;
+        
+        if (/(<\/head>)/i.test(sourceHtml)) {
+            finalHtml = sourceHtml.replace(/(<\/head>)/i, pwaTags + '$1');
+        } else {
+            finalHtml = pwaTags + '\n' + sourceHtml;
         }
+        textFiles['index.html'] = finalHtml;
 
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                const imgTag = `\n<img src="${base64Image}" alt="صورة مرفوعة" style="max-width: 100%; border-radius: 8px;">\n`;
-                
-                const textarea = document.getElementById('htmlCode');
-                const cursorPosition = textarea.selectionStart;
-                const textBefore = textarea.value.substring(0, cursorPosition);
-                const textAfter = textarea.value.substring(cursorPosition);
-                
-                textarea.value = textBefore + imgTag + textAfter;
-                showToast('تم إدراج كود الصورة بنجاح!');
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
+        document.getElementById('resultsCard').style.display = 'block';
+        showToast('تم تجهيز الملفات بنجاح!');
+    }
+
+    function downloadAsZip() {
+        if (!window.JSZip) {
+            alert('مكتبة الضغط لم يتم تحميلها بعد. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
+            return;
         }
-
-        async function pasteCode() {
-            try {
-                const text = await navigator.clipboard.readText();
-                document.getElementById('htmlCode').value = text;
-                showToast('تم اللصق بنجاح!');
-            } catch (err) {
-                alert('عذراً، متصفحك يمنع اللصق التلقائي. يرجى الضغط بيمين الماوس واختيار لصق، أو استخدام Ctrl+V');
+        try {
+            const zip = new Zip();
+            if (typeof zip.folder !== 'function') {
+                const newZip = new window.JSZip();
+                createZipData(newZip);
+            } else {
+                createZipData(zip);
             }
+        } catch (err) {
+            const fallbackZip = new window.JSZip();
+            createZipData(fallbackZip);
         }
+    }
 
-        function clearCode() {
-            document.getElementById('htmlCode').value = '';
-            document.getElementById('resultArea').style.display = 'none';
-            document.getElementById('generatedLink').value = '';
-            document.getElementById('shortLink').value = '';
-            document.getElementById('previewFrame').src = '';
-            if (currentBlobUrl) {
-                URL.revokeObjectURL(currentBlobUrl);
-                currentBlobUrl = null;
-            }
-            showToast('تم مسح كل شيء!');
-        }
-
-        function generatePageLink() {
-            const htmlContent = document.getElementById('htmlCode').value;
+    function createZipData(zipInstance) {
+        try {
+            const safeFolderName = currentAppName.replace(/[^a-zA-Z0-9_\-\u0600-\u06FF\s]/g, '').trim().replace(/\s+/g, '_') || 'PWA_Files';
+            const folder = zipInstance.folder(safeFolderName);
             
-            if (htmlContent.trim() === '') {
-                alert('عذراً، يجب عليك لصق كود أو رفع ملف أولاً!');
-                return;
-            }
-
-            // استخدام تقنية Blob لحل مشكلة الأكواد الضخمة (روابط نظيفة وقصيرة تفتح فورا)
-            if (currentBlobUrl) {
-                URL.revokeObjectURL(currentBlobUrl); 
-            }
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            currentBlobUrl = URL.createObjectURL(blob);
+            folder.file("index.html", textFiles['index.html']);
+            folder.file("manifest.json", textFiles['manifest.json']);
+            folder.file("sw.js", textFiles['sw.js']);
+            folder.file("offline.html", textFiles['offline.html']); 
             
-            document.getElementById('generatedLink').value = currentBlobUrl;
-            document.getElementById('shortLink').value = '';
-            document.getElementById('previewFrame').src = currentBlobUrl;
-            document.getElementById('resultArea').style.display = 'block';
-            showToast('تم توليد الرابط بنجاح!');
+            folder.file("icon-192.png", icon192Data.base64, {base64: true});
+            folder.file("icon-512.png", icon512Data.base64, {base64: true});
+            
+            zipInstance.generateAsync({type:"blob"}).then(function(content) {
+                downloadBlob(safeFolderName + ".zip", content);
+            }).catch(function(err) {
+                alert('حدث خطأ أثناء ضغط الملفات: ' + err.message);
+            });
+        } catch(e) {
+            alert('خطأ في بناء مجلد الضغط: ' + e.message);
         }
+    }
 
-        async function createShortLink() {
-            const htmlContent = document.getElementById('htmlCode').value;
-            if (!htmlContent) {
-                alert('قم بتوليد الرابط الأساسي أولاً!');
-                return;
-            }
+    function getMimeType(filename) {
+        if (filename.endsWith('.html')) return 'text/html;charset=utf-8';
+        if (filename.endsWith('.json')) return 'application/json;charset=utf-8';
+        if (filename.endsWith('.js')) return 'application/javascript;charset=utf-8';
+        return 'text/plain;charset=utf-8';
+    }
 
-            // الأكواد الضخمة جدا لا يمكن اختصارها برابط خارجي، يجب تحميلها كملف
-            if (htmlContent.length > 2000) {
-                alert('عذراً، الكود الخاص بك ضخم جداً (مثل مواقع البث). للحصول على رابط طبيعي يمكنك مشاركته مع الناس، اضغط على زر "تحميل الملف 💾" ثم قم برفعه على استضافتك (مثل GitHub Pages).');
-                return;
-            }
+    function downloadText(filename) {
+        const text = textFiles[filename];
+        if (!text) return;
+        const blob = new Blob([text], { type: getMimeType(filename) });
+        downloadBlob(filename, blob);
+    }
 
-            const btn = document.getElementById('btnShorten');
-            btn.innerText = 'جاري التقصير...';
-            btn.disabled = true;
-
-            try {
-                const encodedHtml = encodeURIComponent(htmlContent);
-                const dataUri = `data:text/html;charset=utf-8,${encodedHtml}`;
-                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(dataUri)}`);
-                
-                if (response.ok) {
-                    const shortUrl = await response.text();
-                    document.getElementById('shortLink').value = shortUrl;
-                    showToast('تم تقصير الرابط بنجاح!');
-                } else {
-                    throw new Error('فشل التقصير');
-                }
-            } catch (error) {
-                alert('فشل اختصار الرابط، الكود كبير جداً. يرجى استخدام ميزة "تحميل الملف".');
-            } finally {
-                btn.innerText = '✂️ تقصير الرابط';
-                btn.disabled = false;
-            }
+    function downloadBlob(filename, blob) {
+        if (!blob) {
+            alert('البيانات غير متوفرة للتنزيل.');
+            return;
         }
-
-        // دالة جديدة لحفظ الكود كملف HTML 
-        function downloadHTMLFile() {
-            const htmlContent = document.getElementById('htmlCode').value;
-            if (htmlContent.trim() === '') {
-                alert('لا يوجد كود لتحميله!');
-                return;
-            }
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'my_page.html';
-            document.body.appendChild(a);
-            a.click();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('تم تحميل الملف بنجاح!');
-        }
+        }, 150);
+    }
+</script>
 
-        function copyLink(elementId) {
-            const linkInput = document.getElementById(elementId);
-            if (linkInput.value.trim() === '') {
-                alert('لا يوجد رابط لنسخه!');
-                return;
-            }
-            linkInput.select();
-            linkInput.setSelectionRange(0, 999999); 
-            
-            navigator.clipboard.writeText(linkInput.value).then(() => {
-                showToast('تم النسخ بنجاح!');
-            }).catch(err => {
-                document.execCommand('copy');
-                showToast('تم النسخ بنجاح!');
-            });
-        }
-
-        function openInNewTab() {
-            if (currentBlobUrl) {
-                window.open(currentBlobUrl, '_blank');
-            }
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toastMsg');
-            toast.innerText = message || 'تم الإجراء بنجاح!';
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-    </script>
 </body>
 </html>
