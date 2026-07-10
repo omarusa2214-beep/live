@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1200">
+    <title>محاكي واستضافة HTML المباشر &amp; صانع PWA</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #18191a;
+            color: #e4e6eb;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #242526;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+            gap: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .header h2 { margin: 0; color: #e4e6eb; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .btn {
+            background: #007bff; color: white; padding: 10px 20px;
+            border-radius: 5px; cursor: pointer; transition: all 0.3s;
+            border: none; font-size: 16px; font-family: inherit;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-warning { background: #ffc107; color: #000; font-weight: bold;}
+        .btn-warning:hover { background: #e0a800; }
+        
+        .btn-zip { background: #6f42c1; }
+        .btn-zip:hover { background: #5a32a3; }
+        
+        .btn-icon { background: #17a2b8; }
+        .btn-icon:hover { background: #138496; }
+        .btn-icon-success { background: #148a27 !important; }
+        
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #bd2130; }
+        
+        .btn-theme { background: #4e5d6c; color: #fff; }
+        .btn-theme:hover { background: #394552; }
+
+        .btn-paste { background: #fd7e14; color: white; }
+        .btn-paste:hover { background: #e8590c; }
+
+        .btn-share-full { background: #6610f2; color: white; font-weight: bold; }
+        .btn-share-full:hover { background: #520dc2; }
+
+        input[type="file"] { display: none; }
+
+        .container {
+            display: flex; gap: 20px; flex: 1; min-height: 0; 
+        }
+
+        .box {
+            flex: 1; display: flex; flex-direction: column;
+            background: #242526;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            overflow: hidden; border: 1px solid #3a3b3c;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .box-header {
+            background: #1c1d1e; color: #abb2bf; padding: 12px 20px;
+            font-weight: bold; font-size: 14px; display: flex; justify-content: space-between;
+        }
+
+        textarea {
+            flex: 1; padding: 20px; border: none; resize: none;
+            font-family: 'Courier New', Courier, monospace; font-size: 16px;
+            line-height: 1.5; background: #1e1e1e; color: #d4d4d4; outline: none;
+        }
+
+        iframe {
+            flex: 1; border: none; width: 100%; height: 100%; background: #fff;
+        }
+
+        body.light-mode { background-color: #f0f2f5; color: #333; }
+        body.light-mode .header { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        body.light-mode .header h2 { color: #333; }
+        body.light-mode .box { background: #fff; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body.light-mode .box-header { background: #282c34; color: #abb2bf; }
+        body.light-mode .btn-theme { background: #e4e6eb; color: #333; }
+        body.light-mode .btn-theme:hover { background: #d8dabf; }
+    </style>
+
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.log('SW Failed', err));
+        });
+      }
+    </script>
+</head>
+<body>
+
+    <div id="editorUi" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="header">
+            <h2>HTML Live Server &amp; Hosting ⚡</h2>
+            <div class="actions">
+                <button class="btn btn-theme" id="themeToggleBtn">تبديل المود 🌗</button>
+                <button class="btn btn-paste" id="pasteBtn">لصق المنسوخ 📋</button>
+
+                <label class="btn btn-icon" id="iconLabel">
+                    <span id="iconText">رفع أيقونة التطبيق (مرة واحدة) 🖼️</span>
+                    <input type="file" id="pwaIconInput" accept="image/*">
+                </label>
+
+                <button class="btn btn-zip" id="downloadZipBtn">تحميل كملف PWA مضغوط 📦</button>
+                <button class="btn btn-warning" id="shareBtn">عمل رابط ومشاركته 🔗</button>
+                
+                <button class="btn btn-share-full" id="fullPageShareBtn">رابط صفحة كاملة 🌐🔗</button>
+                
+                <button class="btn btn-success" id="openNewTabBtn">افتح في صفحة جديدة 🌐</button>
+                
+                <label class="btn">
+                    ارفع ملف HTML
+                    <input type="file" id="fileInput" accept=".html, .htm">
+                </label>
+
+                <button class="btn btn-danger" id="clearAllBtn">تفريغ وتنظيف المحرر 🗑️</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="box">
+                <div class="box-header">
+                    <span>محرر الأكواد</span>
+                </div>
+                <textarea id="editor" placeholder="اكتب كود HTML هنا..."></textarea>
+            </div>
+
+            <div class="box">
+                <div class="box-header">
+                    <span>النتيجة المباشرة</span>
+                </div>
+                <iframe id="viewer" srcdoc=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // إعدادات Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBtIkF-UhkeFa-cxutgJAQpR7K_IjKxloc",
+            authDomain: "spygame-337ee.firebaseapp.com",
+            databaseURL: "https://spygame-337ee-default-rtdb.firebaseio.com", 
+            projectId: "spygame-337ee",
+            storageBucket: "spygame-337ee.firebasestorage.app"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // المتغيرات الأساسية
+        const editor = document.getElementById('editor');
+        const viewer = document.getElementById('viewer');
+        const shareBtn = document.getElementById('shareBtn');
+        const fullPageShareBtn = document.getElementById('fullPageShareBtn');
+        const downloadZipBtn = document.getElementById('downloadZipBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const pasteBtn = document.getElementById('pasteBtn');
+
+        const checkFlag = "NO_IMAGE_UPLOADED";
+        let icon192Data = checkFlag;
+        let icon512Data = checkFlag;
+
+        // دالة تحديث النتيجة
+        function updateOutput() {
+            if(viewer) {
+                viewer.srcdoc = editor.value;
+            }
+        }
+        if(editor) {
+            editor.addEventListener('input', updateOutput);
+        }
+
+        // رفع ملف HTML
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                editor.value = e.target.result;
+                updateOutput();
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        });
+
+        // رفع أيقونة التطبيق
+        document.getElementById('pwaIconInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64RawData = e.target.result.split(',')[1];
+                icon192Data = base64RawData;
+                icon512Data = base64RawData;
+                
+                document.getElementById('iconText').innerText = "تم تجهيز الأيقونات بنجاح! ✅";
+                document.getElementById('iconLabel').classList.add('btn-icon-success');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // الفتح في صفحة جديدة
+        document.getElementById('openNewTabBtn').addEventListener('click', function() {
+            const blob = new Blob([editor.value], { type: 'text/html' });
+            window.open(URL.createObjectURL(blob), '_blank');
+        });
+
+        // دالة النسخ الحديثة
+        async function forceCopy(text, customAlertMessage) {
+            const alertMsg = customAlertMessage || "تم نسخ رابط المشروع بنجاح ومشاركته! 🔗";
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert(alertMsg);
+                    return;
+                } catch (err) {
+                    console.error("Clipboard API failed, using fallback", err);
+                }
+            }
+            // الطريقة الاحتياطية
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed"; 
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert(alertMsg);
+            } catch (err) {
+                console.error("Copy failed", err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // مشاركة الرابط عبر Firebase
+        shareBtn.addEventListener('click', function() {
+            const uniqueId = Math.random().toString(36).substring(2, 10);
+            const currentUrl = window.location.href.split('?')[0];
+            const shareUrl = currentUrl + "?id=" + uniqueId;
+            
+            db.ref('shared_codes/' + uniqueId).set({
+                htmlCode: editor.value,
+                timestamp: Date.now()
+            }).then(() => {
+                forceCopy(shareUrl);
+            }).catch((error) => {
+                console.error("Firebase save error:", error);
+                alert("حدث خطأ أثناء حفظ ومشاركة الكود.");
+            });
+        });
+
+        // مشاركة صفحة كاملة
+        fullPageShareBtn.addEventListener('click', function() {
+            const uniqueId = Math.random().toString(36).substring(2, 10);
+            const currentUrl = window.location.href.split('?')[0];
+            const shareUrl = currentUrl + "?view=" + uniqueId;
+            
+            db.ref('shared_codes/' + uniqueId).set({
+                htmlCode: editor.value,
+                timestamp: Date.now()
+            }).then(() => {
+                forceCopy(shareUrl, "تم نسخ رابط الصفحة الكاملة بنجاح وتلقائياً! 🌐🔗");
+            }).catch((error) => {
+                console.error("Firebase save error:", error);
+                alert("حدث خطأ أثناء حفظ ونشر الصفحة الكامله.");
+            });
+        });
+
+        // زر لصق المنسوخ
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                editor.value = text;
+                updateOutput();
+            } catch (err) {
+                alert("يرجى إعطاء صلاحية الوصول للحافظة (Clipboard) للمتصفح، أو استخدم الاختصار Ctrl+V مباشرة.");
+                console.error('Failed to read clipboard contents: ', err);
+            }
+        });
+
+        // تفريغ المحرر
+        clearAllBtn.addEventListener('click', function() {
+            editor.value = "";
+            updateOutput();
+            icon192Data = checkFlag;
+            icon512Data = checkFlag;
+            
+            document.getElementById('iconText').innerText = "رفع أيقونة التطبيق (مرة واحدة) 🖼️";
+            document.getElementById('iconLabel').classList.remove('btn-icon-success');
+            document.getElementById('pwaIconInput').value = "";
+        });
+
+        // تبديل المود
+        themeToggleBtn.addEventListener('click', function() {
+            document.body.classList.toggle('light-mode');
+        });
+
+        // توليد الأيقونات التلقائية
+        function generateLetterIcon(text, size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#007bff';
+            ctx.fillRect(0, 0, size, size);
+
+            const firstLetter = text ? text.trim().charAt(0).toUpperCase() : 'P';
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.5}px 'Segoe UI', Tahoma, Geneva, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(firstLetter, size / 2, size / 2);
+
+            return canvas.toDataURL('image/png').split(',')[1];
+        }
+
+        // تحميل PWA المضغوط
+        downloadZipBtn.addEventListener('click', function() {
+            const zip = new JSZip();
+            
+            zip.file("index.html", editor.value);
+
+            let pwaName = "تطبيقي الذكي المطور";
+            try {
+                const parser = new DOMParser();
+                const htmlDoc = parser.parseFromString(editor.value, 'text/html');
+                if (htmlDoc.title && htmlDoc.title.trim() !== "") {
+                    pwaName = htmlDoc.title.trim();
+                }
+            } catch (e) {
+                console.error("Error parsing page title:", e);
+            }
+
+            const manifestContent = {
+                "name": pwaName,
+                "short_name": pwaName.substring(0, 12),
+                "start_url": "./index.html",
+                "display": "standalone",
+                "background_color": "#ffffff",
+                "theme-color": "#3b82f6",
+                "icons": [
+                    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },
+                    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png" }
+                ]
+            };
+            zip.file("manifest.json", JSON.stringify(manifestContent, null, 2));
+
+            const offlineHtmlContent = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أنت غير متصل بالإنترنت</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f2f5; color: #333; margin: 0; text-align: center; }
+        h1 { color: #dc3545; }
+        p { color: #666; font-size: 18px; }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="icon">📶❌</div>
+    <h1>أنت غير متصل بالإنترنت</h1>
+    <p>يبدو أنك فقدت الاتصال بالإنترنت.<br>يرجى التحقق من الشبكة والمحاولة مرة أخرى.</p>
+</body>
+</html>`;
+            zip.file("offline.html", offlineHtmlContent);
+
+            const swContent = `const CACHE_NAME = 'pwa-cache-v2';
+const assets = [ 
+    './', 
+    './index.html', 
+    './manifest.json', 
+    './icon-192.png', 
+    './icon-512.png',
+    './offline.html' 
+];
+
+self.addEventListener('install', e => { 
+    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(assets))); 
+});
+
+self.addEventListener('fetch', e => { 
+    e.respondWith(
+        caches.match(e.request).then(res => {
+            return res || fetch(e.request).catch(() => caches.match('./offline.html'));
+        })
+    ); 
+});`;
+            zip.file("sw.js", swContent);
+
+            let finalIcon192 = icon192Data;
+            let finalIcon512 = icon512Data;
+
+            if (icon192Data === checkFlag) {
+                finalIcon192 = generateLetterIcon(pwaName, 192);
+                finalIcon512 = generateLetterIcon(pwaName, 512);
+            }
+
+            zip.file("icon-192.png", finalIcon192, {base64: true});
+            zip.file("icon-512.png", finalIcon512, {base64: true});
+
+            zip.generateAsync({type: "blob"}).then(function(content) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = pwaName + "_Project.zip";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(function(err) {
+                console.error("ZIP creation error:", err);
+            });
+        });
+
+        // دالة الفحص عند تحميل الصفحة
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewId = urlParams.get('view'); 
+            const projectId = urlParams.get('id'); 
+
+            if (viewId) {
+                db.ref('shared_codes/' + viewId).once('value').then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const targetHtml = snapshot.val().htmlCode;
+                        document.open();
+                        document.write(targetHtml); 
+                        document.close();
+                    } else {
+                        document.body.innerHTML = "<div style='text-align:center; margin-top:100px; font-family:sans-serif; direction:rtl;'><h2>عذراً، هذه الصفحة غير موجودة أو تم حذفها! ❌</h2></div>";
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching data:", error);
+                    document.body.innerHTML = "<div style='text-align:center; margin-top:100px; font-family:sans-serif; direction:rtl;'><h2>حدث خطأ أثناء تحميل الصفحة المباشرة! ❌</h2></div>";
+                });
+                return; 
+            }
+
+            if (projectId) {
+                db.ref('shared_codes/' + projectId).once('value').then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const targetHtml = snapshot.val().htmlCode;
+                        editor.value = targetHtml; 
+                        updateOutput();
+                    } else {
+                        alert("عذراً، هذا الملف غير موجود أو تم حذفه!");
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching data:", error);
+                });
+            } else {
+                editor.value = "<!DOCTYPE html>\n<html>\n<head>\n  <title>صفحة جهات الاتصال</title>\n</head>\n<body>\n  <div style='text-align:center; margin-top:50px;'>\n    <h1 style='color:#007bff;'>أهلاً بيك!</h1>\n    <p>غير النص اللي جوه الـ title فوق، واضغط تحميل.. هتلاقي الـ PWA اتسمت بيه فوراً.</p>\n  </div>\n</body>\n</html>";
+                updateOutput();
+            }
+        };
+    </script>
+</body>
+</html>
