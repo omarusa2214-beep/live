@@ -15,6 +15,7 @@
             --danger: #ff4d4d;
             --info: #00a8ff;
             --warning: #fbc531;
+            --success: #2ecc71;
         }
 
         * {
@@ -202,6 +203,7 @@
 
         .btn-action.copy { background-color: var(--secondary); color: #000; }
         .btn-action.shorten { background-color: var(--info); color: #fff; }
+        .btn-action.download { background-color: var(--success); color: #fff; }
         .btn-action:hover { opacity: 0.8; }
 
         .preview-section {
@@ -247,17 +249,15 @@
 
     <div class="dashboard-container">
         <div class="header">
-            <h1>أداة تحويل كود HTML إلى رابط</h1>
-            <p>ضع الكود، ارفع ملفاً، أو أدرج صورة وسيتم توليد رابط مباشر لها ومعاينتها فوراً</p>
+            <h1>أداة تحويل كود HTML إلى رابط مباشر</h1>
+            <p>ضع الكود، ارفع ملفاً، أو أدرج صورة وسيتم توليد رابط عادي سريع ومعاينتها فوراً</p>
         </div>
 
         <div class="input-group">
             <div class="input-header">
                 <label for="htmlCode">كود HTML:</label>
                 
-                <!-- أزرار التحكم الجديدة -->
                 <div class="action-buttons">
-                    <!-- مدخلات مخفية لرفع الملفات -->
                     <input type="file" id="fileUploader" style="display: none;" accept=".html,.htm,.txt" onchange="handleFileUpload(event)">
                     <input type="file" id="imgUploader" style="display: none;" accept="image/*" onchange="handleImageUpload(event)">
                     
@@ -273,23 +273,21 @@
         <button class="btn-generate" onclick="generatePageLink()">تحويل وتوليد الرابط الآن</button>
 
         <div class="result-area" id="resultArea">
-            <!-- الرابط الأساسي الكامل -->
-            <label>الرابط الخاص بالصفحة (رابط كامل مستقل):</label>
+            <label>الرابط الخاص بالصفحة (يفتح بشكل سليم وسريع):</label>
             <div class="link-box">
                 <input type="text" id="generatedLink" class="link-input" readonly>
                 <button class="btn-action copy" onclick="copyLink('generatedLink')">نسخ الرابط</button>
                 <button class="btn-action" onclick="openInNewTab()">فتح في نافذة</button>
+                <button class="btn-action download" onclick="downloadHTMLFile()">💾 تحميل الملف</button>
             </div>
 
-            <!-- اختصار الرابط -->
-            <label style="color: var(--info);">رابط مختصر (اختياري):</label>
+            <label style="color: var(--info);">رابط مختصر (اختياري للأكواد الصغيرة فقط):</label>
             <div class="link-box">
                 <input type="text" id="shortLink" class="link-input short-link-input" placeholder="اضغط على تقصير الرابط ليظهر هنا..." readonly>
                 <button class="btn-action shorten" id="btnShorten" onclick="createShortLink()">✂️ تقصير الرابط</button>
                 <button class="btn-action copy" onclick="copyLink('shortLink')">نسخ المختصر</button>
             </div>
 
-            <!-- المعاينة -->
             <div class="preview-section">
                 <div class="preview-header">معاينة حية للصفحة المنسوخة</div>
                 <iframe id="previewFrame"></iframe>
@@ -302,7 +300,6 @@
     <script>
         let currentBlobUrl = null;
 
-        // 1. دالة رفع ملف (HTML/TXT)
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -312,11 +309,9 @@
                 showToast('تم تحميل كود الملف بنجاح!');
             };
             reader.readAsText(file);
-            // تصفير المدخل ليقبل نفس الملف مرة أخرى إذا لزم الأمر
             event.target.value = ''; 
         }
 
-        // 2. دالة رفع صورة وتحويلها لكود Base64 داخل الـ HTML
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -326,7 +321,6 @@
                 const imgTag = `\n<img src="${base64Image}" alt="صورة مرفوعة" style="max-width: 100%; border-radius: 8px;">\n`;
                 
                 const textarea = document.getElementById('htmlCode');
-                // إدراج الصورة في مكان وقوف المؤشر
                 const cursorPosition = textarea.selectionStart;
                 const textBefore = textarea.value.substring(0, cursorPosition);
                 const textAfter = textarea.value.substring(cursorPosition);
@@ -338,7 +332,6 @@
             event.target.value = '';
         }
 
-        // 3. دالة لصق الكود
         async function pasteCode() {
             try {
                 const text = await navigator.clipboard.readText();
@@ -349,7 +342,6 @@
             }
         }
 
-        // 4. دالة مسح الكل
         function clearCode() {
             document.getElementById('htmlCode').value = '';
             document.getElementById('resultArea').style.display = 'none';
@@ -363,7 +355,6 @@
             showToast('تم مسح كل شيء!');
         }
 
-        // 5. دالة تحويل وتوليد الرابط الأساسي
         function generatePageLink() {
             const htmlContent = document.getElementById('htmlCode').value;
             
@@ -372,29 +363,30 @@
                 return;
             }
 
-            const encodedHtml = encodeURIComponent(htmlContent);
-            const dataUri = `data:text/html;charset=utf-8,${encodedHtml}`;
-            document.getElementById('generatedLink').value = dataUri;
-            
-            // تصفير حقل الرابط المختصر عند توليد كود جديد
-            document.getElementById('shortLink').value = '';
-
+            // استخدام تقنية Blob لحل مشكلة الأكواد الضخمة (روابط نظيفة وقصيرة تفتح فورا)
             if (currentBlobUrl) {
                 URL.revokeObjectURL(currentBlobUrl); 
             }
-            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
             currentBlobUrl = URL.createObjectURL(blob);
-
+            
+            document.getElementById('generatedLink').value = currentBlobUrl;
+            document.getElementById('shortLink').value = '';
             document.getElementById('previewFrame').src = currentBlobUrl;
             document.getElementById('resultArea').style.display = 'block';
             showToast('تم توليد الرابط بنجاح!');
         }
 
-        // 6. دالة تقصير الرابط
         async function createShortLink() {
-            const longUrl = document.getElementById('generatedLink').value;
-            if (!longUrl) {
+            const htmlContent = document.getElementById('htmlCode').value;
+            if (!htmlContent) {
                 alert('قم بتوليد الرابط الأساسي أولاً!');
+                return;
+            }
+
+            // الأكواد الضخمة جدا لا يمكن اختصارها برابط خارجي، يجب تحميلها كملف
+            if (htmlContent.length > 2000) {
+                alert('عذراً، الكود الخاص بك ضخم جداً (مثل مواقع البث). للحصول على رابط طبيعي يمكنك مشاركته مع الناس، اضغط على زر "تحميل الملف 💾" ثم قم برفعه على استضافتك (مثل GitHub Pages).');
                 return;
             }
 
@@ -403,8 +395,10 @@
             btn.disabled = true;
 
             try {
-                // استخدام API مجاني لتقصير الروابط (TinyURL)
-                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+                const encodedHtml = encodeURIComponent(htmlContent);
+                const dataUri = `data:text/html;charset=utf-8,${encodedHtml}`;
+                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(dataUri)}`);
+                
                 if (response.ok) {
                     const shortUrl = await response.text();
                     document.getElementById('shortLink').value = shortUrl;
@@ -413,21 +407,38 @@
                     throw new Error('فشل التقصير');
                 }
             } catch (error) {
-                alert('عذراً، حجم الكود كبير جداً على خدمات تقصير الروابط المجانية (تتطلب الروابط الكبيرة جداً استضافة فعلية). جرب استخدام كود أصغر.');
+                alert('فشل اختصار الرابط، الكود كبير جداً. يرجى استخدام ميزة "تحميل الملف".');
             } finally {
                 btn.innerText = '✂️ تقصير الرابط';
                 btn.disabled = false;
             }
         }
 
-        // 7. دالة النسخ الموحدة (تقبل الـ ID)
+        // دالة جديدة لحفظ الكود كملف HTML 
+        function downloadHTMLFile() {
+            const htmlContent = document.getElementById('htmlCode').value;
+            if (htmlContent.trim() === '') {
+                alert('لا يوجد كود لتحميله!');
+                return;
+            }
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my_page.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('تم تحميل الملف بنجاح!');
+        }
+
         function copyLink(elementId) {
             const linkInput = document.getElementById(elementId);
             if (linkInput.value.trim() === '') {
                 alert('لا يوجد رابط لنسخه!');
                 return;
             }
-            
             linkInput.select();
             linkInput.setSelectionRange(0, 999999); 
             
@@ -439,14 +450,12 @@
             });
         }
 
-        // 8. دالة الفتح في نافذة جديدة
         function openInNewTab() {
             if (currentBlobUrl) {
                 window.open(currentBlobUrl, '_blank');
             }
         }
 
-        // 9. دالة الإشعارات المنبثقة
         function showToast(message) {
             const toast = document.getElementById('toastMsg');
             toast.innerText = message || 'تم الإجراء بنجاح!';
